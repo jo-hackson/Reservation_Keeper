@@ -4,47 +4,79 @@ require 'sqlite3'
 
 db = SQLite3::Database.new("reservations.db")
 
+# logins database
 create_login_table = <<-SQL
-	CREATE TABLE IF NOT EXISTS login(
+	CREATE TABLE IF NOT EXISTS logins(
 		id INTEGER PRIMARY KEY,
 		username VARCHAR(255),
 		password VARCHAR(255)
-	);
-SQL
-
-create_hotel_table = <<-SQL
-
-	CREATE TABLE IF NOT EXISTS hotel(
-		id INTEGER PRIMARY KEY,
-		hotel_name VARCHAR(255),
-		check_in DATE,
-		check_out DATE
-	);	
-
-SQL
-
-create_flight_table = <<-SQL
-
-	CREATE TABLE IF NOT EXISTS flight(
-		id INTEGER PRIMARY KEY,
-		flight_date DATE,
-		origin_airport VARCHAR(255),
-		departure_time TIME,
-		destination_airport VARCHAR(255),
-		arrival_time TIME
-	);
+	)
 SQL
 
 db.execute(create_login_table)
-db.execute(create_hotel_table)
-db.execute(create_flight_table)
+# db.execute("INSERT INTO logins (username, password) VALUES ( 'jojo', 234)")
 
-# ask user if they are new
-# if new
-# 	then create a new username
-# 	do check that it is not taken
-# else
-# 	sign in 
+def create_unpw(db, desired_username, desired_password)
+	db.execute("INSERT INTO logins (username, password) VALUES (?, ?)", [desired_username, desired_password])
+end
+
+# create_unpw(db, "joanna", 123)
+
+def initial_prompt(db)
+
+puts "Is this your first time at Reservation Keeper? y/n"
+response = gets.chomp
+
+	if response == "y"
+		puts "Welcome to Reservation Keeper! Please enter your desired username: "
+		desired_username = gets.chomp
+		puts "Please enter your password: "
+		desired_password = gets.chomp
+		create_unpw(db, desired_username, desired_password)
+	elsif response == "n"
+		# enter your username and password
+		puts "Welcome back! Please enter your username: "
+		username_input = gets.chomp
+		puts "Please enter your password: "
+		password_input = gets.chomp
+
+	else
+		puts "I am sorry but I do not understand what you typed."
+		initial_prompt(create_login_table)
+	end
+end
+
+
+initial_prompt(db)
+
+# create_hotel_table = <<-SQL
+
+# 	CREATE TABLE IF NOT EXISTS hotel(
+# 		id INTEGER PRIMARY KEY,
+# 		hotel_name VARCHAR(255),
+# 		check_in DATE,
+# 		check_out DATE
+# 	);	
+
+# SQL
+
+# create_flight_table = <<-SQL
+
+# 	CREATE TABLE IF NOT EXISTS flight(
+# 		id INTEGER PRIMARY KEY,
+# 		flight_date DATE,
+# 		origin_airport VARCHAR(255),
+# 		departure_time TIME,
+# 		destination_airport VARCHAR(255),
+# 		arrival_time TIME
+# 	);
+# SQL
+
+
+# db.execute(create_hotel_table)
+# db.execute(create_flight_table)
+
+
 
 # make sure that username = password
 
