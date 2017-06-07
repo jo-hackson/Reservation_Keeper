@@ -121,19 +121,12 @@ def add_hotel_prompt
 	add_hotel(hotel_name, check_in, check_out)
 end
 
-def add_something
-	puts "Would you like to add a flight or hotel reservation?"
-	response = gets.chomp
-	if response == "flight"
-		add_flight_prompt
-	elsif response == "hotel"
-		add_hotel_prompt
-	else
-		puts "I'm sorry. I did not understand that."
-		add_something
-	end
-end
 
+
+
+# receives arguments from add_flight_prompt method to store in database
+# prints all information neatly to user
+# calls confirmation method to check if information is correct
 def add_flight(db, flight_date, origin_airport, departure_time, destination_airport, arrival_time)
 	db.execute("INSERT INTO flights (flight_date, origin_airport, departure_time, destination_airport, arrival_time) 
 		VALUES (?, ?, ?, ?, ?)", [flight_date, origin_airport, departure_time, destination_airport, arrival_time])
@@ -141,6 +134,9 @@ def add_flight(db, flight_date, origin_airport, departure_time, destination_airp
 	# confirmation
 end
 
+# method called when user wants to add flight reservation from add_reservation method
+# series of questions to get information from user
+# passes information to add_flight method to add information to database
 def add_flight_prompt(db)
 
 	puts "Please enter the date of your flight: (ie June 24)"
@@ -162,39 +158,53 @@ def add_flight_prompt(db)
 
 end
 
-add_flight_prompt(db)
+# prompts user to decide if they want to add a flight or hotel reservation
+# will redirect to add_flight_prompt or add_hotel_prompt method accordingly
+# if a bad input is received, then user is prompted and add_reservation method is a called
+def add_reservation(db)
+	puts "Would you like to add a flight or hotel reservation?"
+	response = gets.chomp
+	if response == "flight"
+		add_flight_prompt(db)
+	elsif response == "hotel"
+		add_hotel_prompt(db)
+	else
+		puts "I'm sorry. I did not understand that."
+		add_reservation(db)
+	end
+end
 
 
 
-def confirmation
+def confirmation(db)
 	puts "Is this information correct? y/n"
 	response = gets.chomp
 
 	if response == "y"
 		puts "great"
-		additions
+		additions(db)
 	else
 		puts "boo"
 	# call modify method here
 	end
 end
 
-def additions
+def additions(db)
 	puts "Did you want to add or modify any additional reservations? y/n"
 	response = gets.chomp
 
 	if response == "y"
-		add_something
+		add_reservation(db)
 	elsif response == "n"
 		# print a summary of database table
 		puts "Here is a summary of your reservations: "
 	else
 		puts "I'm sorry. I did not understand that."
-		additions
+		additions(db)
 	end
 end
 
-# add_something
+
 
 
 
