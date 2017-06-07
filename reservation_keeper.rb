@@ -2,35 +2,42 @@
 
 require 'sqlite3'
 
-# db = SQLite3::Database.new("reservation.db")
 db = SQLite3::Database.new("reservations.db")
 
-create_table_cmd = <<-SQL
-	CREATE TABLE login(
+create_login_table = <<-SQL
+	CREATE TABLE IF NOT EXISTS login(
 		id INTEGER PRIMARY KEY,
 		username VARCHAR(255),
 		password VARCHAR(255)
-	)
+	);
+SQL
 
-	# CREATE TABLE hotel(
-	# 	id INTEGER PRIMARY KEY,
-	# 	hotel_name VARCHAR(255),
-	# 	check_in DATE,
-	# 	check_out DATE
-	# )	
+create_hotel_table = <<-SQL
 
-	# CREATE TABLE flight(
-	# 	id INTEGER PRIMARY KEY,
-	# 	flight_date DATE,
-	# 	origin_airport VARCHAR(255),
-	# 	departure_time TIME,
-	# 	destination_airport VARCHAR(255),
-	# 	arrival_time TIME
-	# )
+	CREATE TABLE IF NOT EXISTS hotel(
+		id INTEGER PRIMARY KEY,
+		hotel_name VARCHAR(255),
+		check_in DATE,
+		check_out DATE
+	);	
 
 SQL
 
-# db.execute(create_table_cmd)
+create_flight_table = <<-SQL
+
+	CREATE TABLE IF NOT EXISTS flight(
+		id INTEGER PRIMARY KEY,
+		flight_date DATE,
+		origin_airport VARCHAR(255),
+		departure_time TIME,
+		destination_airport VARCHAR(255),
+		arrival_time TIME
+	);
+SQL
+
+db.execute(create_login_table)
+db.execute(create_hotel_table)
+db.execute(create_flight_table)
 
 # ask user if they are new
 # if new
