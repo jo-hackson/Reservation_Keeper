@@ -4,6 +4,7 @@
 # assumption: all input is correctly formatted
 
 require 'sqlite3'
+require 'date'
 
 db = SQLite3::Database.new("reservations.db")
 # db.results_as_hash = true
@@ -43,11 +44,43 @@ db.execute(create_logins_table)
 db.execute(create_hotels_table)
 db.execute(create_flights_table)
 
+
+
+def modify_reservation(db)
+	if @reservation_type == "hotel"
+		puts "Please select which is incorrect: \n-hotel name \n-check in \n-check out"
+		incorrect_entry = gets.chomp
+		puts "Okay, the #{incorrect_entry} is incorrect. Please enter the update: "
+		update_entry = gets.chomp
+		incorrect_entry = incorrect_entry.tr(" ", "_")
+		db.execute("UPDATE #{@reservation_type + "s"} SET #{incorrect_entry}=\"#{update_entry}\" WHERE owner=@desired_username")
+		# UPDATE rabbits SET age=4 WHERE name="Queen Bey";
+		# print updated reservation
+	else 
+		puts "flight"
+		puts "Please select which is incorrect: \n-flight date \n-origin airport \n-destination airport"
+		# @incorrect_entry = gets.chomp
+		# specific_modification(db)
+	end
+end
+
+def confirmation(db)
+	puts "Is this information correct? y/n"
+	response = gets.chomp
+	if response == "y"
+		puts "Great!"
+		# modifications(db)
+	else
+		modify_reservation(db)
+	end
+	print_reservations(db)
+end
+
 def date_converter(user_input)
 	user_input = user_input.split(" ")
-	month = user_input[0]
+	month = user_input[0].to_i
+	month = Date::MONTHNAMES[month]
 	day = user_input[1]
-	month = Time.new.strftime("%B")
 	flight_date = month + " " + day
 end
 
@@ -58,7 +91,6 @@ def add_flight(db, flight_date, origin_airport, destination_airport, user)
 	db.execute("INSERT INTO flights (flight_date, origin_airport, destination_airport, owner) 
 		VALUES (?, ?, ?, ?)", [flight_date, origin_airport, destination_airport, user])
 	puts "On #{flight_date}, you will be flying from #{origin_airport} to #{destination_airport}."
-
 	confirmation(db)
 end
 
@@ -66,7 +98,6 @@ end
 # series of questions to get information from user
 # passes information to add_flight method to add information to database
 def add_flight_prompt(db, user)
-
 	puts "Please enter the date of your flight: (ie 6 24)"
 	response = gets.chomp
 	flight_date = date_converter(response)
@@ -82,9 +113,6 @@ end
 
 def add_hotel(db, hotel_name, check_in, check_out, user)
 	db.execute("INSERT INTO hotels (hotel_name, check_in, check_out, owner) VALUES (?, ?, ?, ?)", [hotel_name, check_in, check_out, user])
-	# if check_in.round(0) == check_out.round(0)
-	# 	nights_stayed = ((check_out - check_in)*100).round(0)
-	# end
 	puts "You will be staying at #{hotel_name} from #{check_in} to #{check_out}."
 	confirmation(db)
 end
@@ -108,45 +136,58 @@ end
 # will redirect to add_flight_prompt or add_hotel_prompt method accordingly
 # if a bad input is received, then user is prompted and add_reservation method is a called
 def add_reservation(db, user)
-	puts "Would you like to add a flight or hotel reservation?"
-	response = gets.chomp
+	puts "Would you like to handle a flight or hotel reservation? (flight or hotel)"
+	@reservation_type = gets.chomp
 
-	if response == "flight"
+	if @reservation_type == "flight" && @new_member == true
 		add_flight_prompt(db, user)
-	elsif response == "hotel"
+	elsif @reservation_type == "hotel" && @new_member == true
 		add_hotel_prompt(db, user)
 	else
-		puts "I'm sorry. I did not understand that."
-		add_reservation(db, user)
+		puts "Would you like to add, modify, or view the #{@reservation_type} reservation?"
+		update = gets.chomp
+
+		if update == "modify"
+		# print reservation
+		modify_reservation(db)
+		elsif update == "view"
+			print_reservations(db, @desired_username)
+		elsif @reservation_type == "flight" && update == "add"
+			add_flight_prompt(db, user)
+		elsif @reservation_type == "hotel" && update == "add"
+			add_hotel_prompt(db, user)
+		else
+			puts "I'm sorry. I did not understand that."
+			add_reservation(db, user)
+		end
 	end
 end
 
 # set a condition that if username already exists, prompt user 
 def create_unpw(db, desired_username, desired_password)
-
 	begin
 		db.execute("INSERT INTO logins (username, password) VALUES (?, ?)", [desired_username, desired_password])
 	rescue
 		puts "Sorry, pick another username, that one is taken."
 		enter_login_information(db)
 	end
-
 end
 
 def initial_prompt(db)
-
 puts "Is this your first time at Reservation Keeper? y/n"
 response = gets.chomp
 
 	if response == "y"
+		@new_member = true
 		puts "Welcome to Reservation Keeper!"
 		enter_login_information(db)
 	elsif response == "n"
+		@new_member = false
 		puts "Welcome back! Please enter your username: "
-		username_input = gets.chomp
+		@username_input = gets.chomp
 		puts "Please enter your password: "
 		password_input = gets.chomp
-		add_reservation(db, username_input)
+		add_reservation(db, @username_input)
 	else
 		puts "I am sorry but I do not understand what you typed."
 		initial_prompt(db)
@@ -160,24 +201,6 @@ def enter_login_information(db)
 	desired_password = gets.chomp
 	create_unpw(db, @desired_username, desired_password)
 	add_reservation(db, @desired_username)
-end
-
-# driver code
-initial_prompt(db)
-
-
-
-def confirmation(db)
-	puts "Is this information correct? y/n"
-	response = gets.chomp
-
-	if response == "y"
-		puts "Great!"
-		# modifications(db)
-	else
-		puts "boo"
-		# modify_reservation(db)
-	end
 end
 
 def modifications(db)
@@ -198,22 +221,30 @@ def modifications(db)
 	end
 end
 
-def modify_reservation(db)
-	print_reservations(db)
-
-	puts "Please select"
-
+def print_reservations(db, desired_username)
+	if @reservation_type == "hotel"
+		p @username_input
+		p db.execute("SELECT * FROM hotels WHERE owner='@username_input'")
+		# hotel = selected_reservation[0][1]
+		# checkin = selected_reservation[0][2]
+		# checkout = selected_reservation[0][3]
+		# puts "You are staying at the #{hotel_name} from #{check_in} to #{check_out}."
+	else
+		db.execute("SELECT * FROM flights WHERE owner=@desired_username")
+		flight_date = selected_reservation[0][1]
+		origin_airport = selected_reservation[0][2]
+		destination_airport = selected_reservation[0][3]
+		puts "You are flying on #{flight_date} from #{origin_airport} to #{destination_airport}."
+	end
 
 end
 
-def print_reservations(db)
-
-end
 
 
 
 
-
+# driver code
+initial_prompt(db)
 
 # store information is stored on a database
 # order by date
@@ -221,4 +252,6 @@ end
 # special features
 # notice that a flight is missing if there is no flight back to destination
 # your next reservation is:
+
+
 
