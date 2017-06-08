@@ -1,6 +1,7 @@
 # reservation keeper
 # assumption: that all reservations are for 2017
 # assumption: that password entered is correct
+# assumption: all input is correctly formatted
 
 require 'sqlite3'
 
@@ -42,6 +43,14 @@ db.execute(create_logins_table)
 db.execute(create_hotels_table)
 db.execute(create_flights_table)
 
+def date_converter(user_input)
+	user_input = user_input.split(" ")
+	month = user_input[0]
+	day = user_input[1]
+	month = Time.new.strftime("%B")
+	flight_date = month + " " + day
+end
+
 # receives arguments from add_flight_prompt method to store in database
 # prints all information neatly to user
 # calls confirmation method to check if information is correct
@@ -49,15 +58,9 @@ def add_flight(db, flight_date, origin_airport, destination_airport, user)
 	db.execute("INSERT INTO flights (flight_date, origin_airport, destination_airport, owner) 
 		VALUES (?, ?, ?, ?)", [flight_date, origin_airport, destination_airport, user])
 	puts "On #{flight_date}, you will be flying from #{origin_airport} to #{destination_airport}."
-	# confirmation
+
+	confirmation(db)
 end
-
-# def pretty_date(month, day)
-# 	month = Time.new.strftime("%B")
-# 	pretty_date = month + " " + day
-# end
-
-
 
 # method called when user wants to add flight reservation from add_reservation method
 # series of questions to get information from user
@@ -65,13 +68,8 @@ end
 def add_flight_prompt(db, user)
 
 	puts "Please enter the date of your flight: (ie 6 24)"
-	response = gets.chomp.split(" ")
-	month = response[0]
-	day = response[1]
-	month = Time.new.strftime("%B")
-	flight_date = month + " " + day
-	# flight_date = Time.new(2017, month, day).strftime("%Y-%m-%d")
-
+	response = gets.chomp
+	flight_date = date_converter(response)
 
 	puts "Please enter 3 digit airport code of your origin airport:"
 	origin_airport = gets.chomp.upcase!
@@ -80,6 +78,30 @@ def add_flight_prompt(db, user)
 	destination_airport = gets.chomp.upcase!
 
 	add_flight(db, flight_date, origin_airport, destination_airport, user)
+end
+
+def add_hotel(db, hotel_name, check_in, check_out, user)
+	db.execute("INSERT INTO hotels (hotel_name, check_in, check_out, owner) VALUES (?, ?, ?, ?)", [hotel_name, check_in, check_out, user])
+	# if check_in.round(0) == check_out.round(0)
+	# 	nights_stayed = ((check_out - check_in)*100).round(0)
+	# end
+	puts "You will be staying at #{hotel_name} from #{check_in} to #{check_out}."
+	confirmation(db)
+end
+
+def add_hotel_prompt(db, user)
+	puts "Please enter your hotel name:"
+	hotel_name = gets.chomp.capitalize
+
+	puts "Please enter your check-in date: (ie 6 24)"
+	response = gets.chomp
+	check_in = date_converter(response)
+
+	puts "Please enter your check-out date: (ie 6 24)"
+	response = gets.chomp
+	check_out = date_converter(response)
+
+	add_hotel(db, hotel_name, check_in, check_out, user)
 end
 
 # prompts user to decide if they want to add a flight or hotel reservation
@@ -92,7 +114,7 @@ def add_reservation(db, user)
 	if response == "flight"
 		add_flight_prompt(db, user)
 	elsif response == "hotel"
-		add_hotel_prompt(db)
+		add_hotel_prompt(db, user)
 	else
 		puts "I'm sorry. I did not understand that."
 		add_reservation(db, user)
@@ -143,29 +165,6 @@ end
 # driver code
 initial_prompt(db)
 
-def add_hotel(db, hotel_name, check_in, check_out)
-	db.execute("INSERT INTO logins (hotel_name, check_in, check_out) VALUES (?, ?, ?)", [hotel_name, check_in, check_out])
-	if check_in.round(0) == check_out.round(0)
-		nights_stayed = ((check_out - check_in)*100).round(0)
-	end
-	puts "You will be staying at #{hotel_name} for #{nights_stayed} nights."
-	# confirmation
-end
-
-def add_hotel_prompt(db)
-	puts "Please enter your hotel name:"
-	hotel_name = gets.chomp
-
-	puts "Please enter your check-in date: (ie 6 24)"
-	check_in = gets.chomp.to_f
-
-	puts "Please enter your check-out date: (ie 6 24)"
-	check_out = gets.chomp.to_f
-
-	add_hotel(db, hotel_name, check_in, check_out)
-end
-
-
 
 
 def confirmation(db)
@@ -174,10 +173,10 @@ def confirmation(db)
 
 	if response == "y"
 		puts "Great!"
-		modifications(db)
+		# modifications(db)
 	else
 		puts "boo"
-		modify_reservation(db)
+		# modify_reservation(db)
 	end
 end
 
