@@ -1,4 +1,6 @@
 # reservation keeper
+# assumption: that all reservations are for 2017
+# assumption: that password entered is correct
 
 require 'sqlite3'
 
@@ -45,10 +47,17 @@ db.execute(create_flights_table)
 # calls confirmation method to check if information is correct
 def add_flight(db, flight_date, origin_airport, destination_airport, user)
 	db.execute("INSERT INTO flights (flight_date, origin_airport, destination_airport, owner) 
-		VALUES (flight_date, origin_airport, destination_airport, user)")
+		VALUES (?, ?, ?, ?)", [flight_date, origin_airport, destination_airport, user])
 	puts "On #{flight_date}, you will be flying from #{origin_airport} to #{destination_airport}."
 	# confirmation
 end
+
+# def pretty_date(month, day)
+# 	month = Time.new.strftime("%B")
+# 	pretty_date = month + " " + day
+# end
+
+
 
 # method called when user wants to add flight reservation from add_reservation method
 # series of questions to get information from user
@@ -59,7 +68,10 @@ def add_flight_prompt(db, user)
 	response = gets.chomp.split(" ")
 	month = response[0]
 	day = response[1]
-	flight_date = Time.new(2017, month, day)
+	month = Time.new.strftime("%B")
+	flight_date = month + " " + day
+	# flight_date = Time.new(2017, month, day).strftime("%Y-%m-%d")
+
 
 	puts "Please enter 3 digit airport code of your origin airport:"
 	origin_airport = gets.chomp.upcase!
@@ -73,17 +85,17 @@ end
 # prompts user to decide if they want to add a flight or hotel reservation
 # will redirect to add_flight_prompt or add_hotel_prompt method accordingly
 # if a bad input is received, then user is prompted and add_reservation method is a called
-def add_reservation(db)
+def add_reservation(db, user)
 	puts "Would you like to add a flight or hotel reservation?"
 	response = gets.chomp
 
 	if response == "flight"
-		add_flight_prompt(db)
+		add_flight_prompt(db, user)
 	elsif response == "hotel"
 		add_hotel_prompt(db)
 	else
 		puts "I'm sorry. I did not understand that."
-		add_reservation(db)
+		add_reservation(db, user)
 	end
 end
 
@@ -112,6 +124,7 @@ response = gets.chomp
 		username_input = gets.chomp
 		puts "Please enter your password: "
 		password_input = gets.chomp
+		add_reservation(db, username_input)
 	else
 		puts "I am sorry but I do not understand what you typed."
 		initial_prompt(db)
@@ -120,11 +133,11 @@ end
 
 def enter_login_information(db)
 	puts "Please enter your desired username: "
-	desired_username = gets.chomp
+	@desired_username = gets.chomp
 	puts "Please enter your password: "
 	desired_password = gets.chomp
-	create_unpw(db, desired_username, desired_password)
-	add_reservation(db)
+	create_unpw(db, @desired_username, desired_password)
+	add_reservation(db, @desired_username)
 end
 
 # driver code
@@ -175,7 +188,7 @@ def modifications(db)
 	response = gets.chomp
 
 	if response == "add"
-		add_reservation(db)
+		add_reservation(db, username)
 	elsif response == "modify"
 		modify_reservation(db)
 	elsif response == "no"
