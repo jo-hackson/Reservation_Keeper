@@ -10,7 +10,7 @@ create_logins_table = <<-SQL
 	CREATE TABLE IF NOT EXISTS logins(
 		username VARCHAR(255) PRIMARY KEY,
 		password VARCHAR(255)
-	)
+	);
 SQL
 
 create_hotels_table = <<-SQL
@@ -28,7 +28,7 @@ create_flights_table = <<-SQL
 		id INTEGER PRIMARY KEY,
 		flight_date DATE,
 		origin_airport VARCHAR(255),
-		destination_airport VARCHAR(255),
+		destination_airport VARCHAR(255)
 	);
 SQL
 
@@ -36,30 +36,17 @@ db.execute(create_logins_table)
 db.execute(create_hotels_table)
 db.execute(create_flights_table)
 
-
-def create_unpw(db, desired_username, desired_password)
-	db.execute("INSERT INTO logins (username, password) VALUES (?, ?)", [desired_username, desired_password])
-end
-
 # set a condition that if username already exists, prompt user 
-# def check_username(db, desired_username)
+def create_unpw(db, desired_username, desired_password)
 
-# 	p db.execute("SELECT * FROM logins")["username"]
+	begin
+		db.execute("INSERT INTO logins (username, password) VALUES (?, ?)", [desired_username, desired_password])
+	rescue
+		puts "Sorry, pick another username, that one is taken."
+		enter_login_information(db)
+	end
 
-# 	i = 0
-# 	until i > db.execute("SELECT MAX(id) FROM logins").join.to_i do
-# 	db.execute("SELECT * FROM logins").each { |username| 
-# 		if username == desired_username
-# 			puts "match"
-# 		else
-# 			"no match"
-# 		end
-# 	}
-# 	i += 1
-
-# 	end
-
-# end
+end
 
 def initial_prompt(db)
 
@@ -67,12 +54,8 @@ puts "Is this your first time at Reservation Keeper? y/n"
 response = gets.chomp
 
 	if response == "y"
-		puts "Welcome to Reservation Keeper! Please enter your desired username: "
-		desired_username = gets.chomp
-		puts "Please enter your password: "
-		desired_password = gets.chomp
-		create_unpw(db, desired_username, desired_password)
-		check_username(db, desired_username)
+		puts "Welcome to Reservation Keeper!"
+		enter_login_information(db)
 	elsif response == "n"
 		puts "Welcome back! Please enter your username: "
 		username_input = gets.chomp
@@ -82,6 +65,14 @@ response = gets.chomp
 		puts "I am sorry but I do not understand what you typed."
 		initial_prompt(db)
 	end
+end
+
+def enter_login_information(db)
+	puts "Please enter your desired username: "
+	desired_username = gets.chomp
+	puts "Please enter your password: "
+	desired_password = gets.chomp
+	create_unpw(db, desired_username, desired_password)
 end
 
 # driver code
