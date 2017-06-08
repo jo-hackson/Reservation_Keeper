@@ -44,8 +44,6 @@ db.execute(create_logins_table)
 db.execute(create_hotels_table)
 db.execute(create_flights_table)
 
-
-
 def modify_reservation(db)
 	if @reservation_type == "hotel"
 		puts "Please select which is incorrect: \n-hotel name \n-check in \n-check out"
@@ -53,9 +51,12 @@ def modify_reservation(db)
 		puts "Okay, the #{incorrect_entry} is incorrect. Please enter the update: "
 		update_entry = gets.chomp
 		incorrect_entry = incorrect_entry.tr(" ", "_")
-		db.execute("UPDATE #{@reservation_type + "s"} SET #{incorrect_entry}=\"#{update_entry}\" WHERE owner=@desired_username")
+		# p @username_input
+		# db.execute("UPDATE #{@reservation_type + "s"} SET #{incorrect_entry}=#{update_entry} WHERE owner=@username_input")
+		db.execute("UPDATE #{@reservation_type + "s"} SET '#{incorrect_entry}'='#{update_entry}' WHERE owner='#{@username_input}'")
 		# UPDATE rabbits SET age=4 WHERE name="Queen Bey";
 		# print updated reservation
+		puts "done"
 	else 
 		puts "flight"
 		puts "Please select which is incorrect: \n-flight date \n-origin airport \n-destination airport"
@@ -151,7 +152,7 @@ def add_reservation(db, user)
 		# print reservation
 		modify_reservation(db)
 		elsif update == "view"
-			print_reservations(db, @desired_username)
+			print_reservations(db)
 		elsif @reservation_type == "flight" && update == "add"
 			add_flight_prompt(db, user)
 		elsif @reservation_type == "hotel" && update == "add"
@@ -221,14 +222,21 @@ def modifications(db)
 	end
 end
 
-def print_reservations(db, desired_username)
+def print_reservations(db)
 	if @reservation_type == "hotel"
-		p @username_input = "jojo"
-		p db.execute("SELECT * FROM hotels WHERE owner='@username_input'")
-		# hotel = selected_reservation[0][1]
-		# checkin = selected_reservation[0][2]
-		# checkout = selected_reservation[0][3]
-		# puts "You are staying at the #{hotel_name} from #{check_in} to #{check_out}."
+		selected_reservation = db.execute("SELECT * FROM hotels WHERE owner='#{@username_input}'")
+
+		i = 0
+		while i < selected_reservation.length do
+			id = selected_reservation[i][0]
+			hotel = selected_reservation[i][1]
+			checkin = selected_reservation[i][2]
+			checkout = selected_reservation[i][3]
+			puts "[#{id}] You will be staying at #{hotel} from #{checkin} to #{checkout}."
+			i +=1
+		end
+
+		
 	# else
 	# 	db.execute("SELECT * FROM flights WHERE owner='@desired_username'")
 	# 	flight_date = selected_reservation[0][1]
@@ -246,11 +254,9 @@ end
 # driver code
 initial_prompt(db)
 
-# store information is stored on a database
 # order by date
 
 # special features
-# notice that a flight is missing if there is no flight back to destination
 # your next reservation is:
 
 
