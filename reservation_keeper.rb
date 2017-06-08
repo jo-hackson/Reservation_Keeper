@@ -223,18 +223,18 @@ end
 
 def print_reservations(db, desired_username)
 	if @reservation_type == "hotel"
-		p @username_input
+		p @username_input = "jojo"
 		p db.execute("SELECT * FROM hotels WHERE owner='@username_input'")
 		# hotel = selected_reservation[0][1]
 		# checkin = selected_reservation[0][2]
 		# checkout = selected_reservation[0][3]
 		# puts "You are staying at the #{hotel_name} from #{check_in} to #{check_out}."
-	else
-		db.execute("SELECT * FROM flights WHERE owner=@desired_username")
-		flight_date = selected_reservation[0][1]
-		origin_airport = selected_reservation[0][2]
-		destination_airport = selected_reservation[0][3]
-		puts "You are flying on #{flight_date} from #{origin_airport} to #{destination_airport}."
+	# else
+	# 	db.execute("SELECT * FROM flights WHERE owner='@desired_username'")
+	# 	flight_date = selected_reservation[0][1]
+	# 	origin_airport = selected_reservation[0][2]
+	# 	destination_airport = selected_reservation[0][3]
+	# 	puts "You are flying on #{flight_date} from #{origin_airport} to #{destination_airport}."
 	end
 
 end
