@@ -1,13 +1,12 @@
-# reservation keeper
-# assumption: that all reservations are for 2017
-# assumption: that password entered is correct
-# assumption: all input is correctly formatted
+# # reservation keeper
+# # assumption: that all reservations are for 2017
+# # assumption: that password entered is correct
+# # assumption: all input is correctly formatted
 
 require 'sqlite3'
 require 'date'
 
 db = SQLite3::Database.new("reservations.db")
-# db.results_as_hash = true
 
 # database tables creation
 create_logins_table = <<-SQL
@@ -44,220 +43,306 @@ db.execute(create_logins_table)
 db.execute(create_hotels_table)
 db.execute(create_flights_table)
 
-def modify_reservation(db)
-	if @reservation_type == "hotel"
-		puts "Please select which is incorrect: \n-hotel name \n-check in \n-check out"
-		incorrect_entry = gets.chomp
-		puts "Okay, the #{incorrect_entry} is incorrect. Please enter the update: "
-		update_entry = gets.chomp
-		incorrect_entry = incorrect_entry.tr(" ", "_")
-		# p @username_input
-		# db.execute("UPDATE #{@reservation_type + "s"} SET #{incorrect_entry}=#{update_entry} WHERE owner=@username_input")
-		db.execute("UPDATE #{@reservation_type + "s"} SET '#{incorrect_entry}'='#{update_entry}' WHERE owner='#{@username_input}'")
-		# UPDATE rabbits SET age=4 WHERE name="Queen Bey";
-		# print updated reservation
-		puts "done"
-	else 
-		puts "flight"
-		puts "Please select which is incorrect: \n-flight date \n-origin airport \n-destination airport"
-		# @incorrect_entry = gets.chomp
-		# specific_modification(db)
+# ____________________________________________________________________
+
+
+
+
+def add_reservation(username, reservation_type)
+	case reservation_type
+	when 'flight'
+		details = get_flight_details
+		add_flight_reservation_to_db(username, details)
+	when 'hotel'
+		details = get_hotel_details
+		add_hotel_reservation_to_db(username, details)
 	end
 end
 
-def confirmation(db)
-	puts "Is this information correct? y/n"
-	response = gets.chomp
-	if response == "y"
-		puts "Great!"
-		# modifications(db)
-	else
-		modify_reservation(db)
-	end
-	print_reservations(db)
-end
-
-def date_converter(user_input)
-	user_input = user_input.split(" ")
-	month = user_input[0].to_i
-	month = Date::MONTHNAMES[month]
-	day = user_input[1]
-	flight_date = month + " " + day
-end
-
-# receives arguments from add_flight_prompt method to store in database
-# prints all information neatly to user
-# calls confirmation method to check if information is correct
-def add_flight(db, flight_date, origin_airport, destination_airport, user)
-	db.execute("INSERT INTO flights (flight_date, origin_airport, destination_airport, owner) 
+def add_flight_reservation_to_db(username, details)
+	db.execute("INSERT INTO flights (details[:flight_date], details[:origin_airport], details[:destination_airport], owner) 
 		VALUES (?, ?, ?, ?)", [flight_date, origin_airport, destination_airport, user])
-	puts "On #{flight_date}, you will be flying from #{origin_airport} to #{destination_airport}."
-	confirmation(db)
 end
 
-# method called when user wants to add flight reservation from add_reservation method
-# series of questions to get information from user
-# passes information to add_flight method to add information to database
-def add_flight_prompt(db, user)
-	puts "Please enter the date of your flight: (ie 6 24)"
-	response = gets.chomp
-	flight_date = date_converter(response)
+def get_flight_details
+	details = {}
 
-	puts "Please enter 3 digit airport code of your origin airport:"
-	origin_airport = gets.chomp.upcase!
+	puts "What is the date of your flight?"
+	flight_date = gets.chomp
+	details[:flight_date] = flight_date
 
-	puts "Please enter 3 digit airport code of your destination airport:"
-	destination_airport = gets.chomp.upcase!
+	puts "What is the airport you are flying from? (ie BOS)"
+	origin_airport = gets.chomp
+	details[:airline] = origin_airport
 
-	add_flight(db, flight_date, origin_airport, destination_airport, user)
+	puts "What is the airport you are flying to? (ie AUS)"
+	destination_airport = gets.chomp
+	details[:destination_airport] = destination_airport
+
+	details
 end
 
-def add_hotel(db, hotel_name, check_in, check_out, user)
-	db.execute("INSERT INTO hotels (hotel_name, check_in, check_out, owner) VALUES (?, ?, ?, ?)", [hotel_name, check_in, check_out, user])
-	puts "You will be staying at #{hotel_name} from #{check_in} to #{check_out}."
-	confirmation(db)
+def add_hotel_reservation_to_db(username, details)
+	db.execute("INSERT INTO flights (details[:hotel_name], details[:check_in], details[:check_out], owner) VALUES (?, ?, ?, ?)", [hotel_name, check_in, check_out, user])
 end
 
-def add_hotel_prompt(db, user)
-	puts "Please enter your hotel name:"
-	hotel_name = gets.chomp.capitalize
+def get_hotel_details
+	details = {}
 
-	puts "Please enter your check-in date: (ie 6 24)"
-	response = gets.chomp
-	check_in = date_converter(response)
+	puts "What is the name of your hotel?"
+	hotel_name = gets.chomp
+	details[:hotel_name] = hotel_name
 
-	puts "Please enter your check-out date: (ie 6 24)"
-	response = gets.chomp
-	check_out = date_converter(response)
+	puts "When will you be checking in?"
+	check_in = gets.chomp
+	details[:check_in ] = check_in 
 
-	add_hotel(db, hotel_name, check_in, check_out, user)
+	puts "When will you be checking out?"
+	check_our = gets.chomp
+	details[:check_out] = check_out
+
+	details
 end
 
-# prompts user to decide if they want to add a flight or hotel reservation
-# will redirect to add_flight_prompt or add_hotel_prompt method accordingly
-# if a bad input is received, then user is prompted and add_reservation method is a called
-def add_reservation(db, user)
-	puts "Would you like to handle a flight or hotel reservation? (flight or hotel)"
-	@reservation_type = gets.chomp
+_____________________________________________________________________
 
-	if @reservation_type == "flight" && @new_member == true
-		add_flight_prompt(db, user)
-	elsif @reservation_type == "hotel" && @new_member == true
-		add_hotel_prompt(db, user)
-	else
-		puts "Would you like to add, modify, or view the #{@reservation_type} reservation?"
-		update = gets.chomp
-
-		if update == "modify"
-		# print reservation
-		modify_reservation(db)
-		elsif update == "view"
-			print_reservations(db)
-		elsif @reservation_type == "flight" && update == "add"
-			add_flight_prompt(db, user)
-		elsif @reservation_type == "hotel" && update == "add"
-			add_hotel_prompt(db, user)
-		else
-			puts "I'm sorry. I did not understand that."
-			add_reservation(db, user)
-		end
+def modify_reservation(username, reservation_type)
+	case reservation_type
+	when 'flight'
+		details = modify_flight_details
+		modify_reservation(username, details, reservation_type)
+	when 'hotel'
+		details = modify_hotel_details
+		modify_reservation(username, details)
 	end
 end
 
-# set a condition that if username already exists, prompt user 
-def create_unpw(db, desired_username, desired_password)
+def modify_reservation_to_db(username, details, reservation_type)
+	db.execute("UPDATE #{reservation_type + "s"} SET #{details[:incorrect_entry]}=#{details[:update_entry]} WHERE owner=@username_input")
+end
+
+def modify_flight_details
+	details = {}
+
+	puts "Please select which is incorrect: \n-hotel name \n-check in \n-check out"
+	incorrect_entry = gets.chomp
+	incorrect_entry = incorrect_entry.tr(" ", "_")
+	details[:incorrect_entry] = incorrect_entry
+
+	puts "Please enter the correct information: "
+	correct_entry = gets.chomp
+	details[:correct_entry] = correct_entry
+
+	details
+end
+
+def get_hotel_details
+	details = {}
+
+	puts "What is the name of your hotel?"
+	hotel_name = gets.chomp
+	details[:hotel_name] = hotel_name
+
+	puts "When will you be checking in?"
+	check_in = gets.chomp
+	details[:check_in ] = check_in 
+
+	puts "When will you be checking out?"
+	check_our = gets.chomp
+	details[:check_our] = check_our
+
+	details
+end
+
+
+
+_____________________________________________________________________
+
+
+def delete_reservation(username, reservation_type)
+	case reservation_type
+	when 'flight'
+		details = get_flight_details
+		add_flight_reservation_to_db(username, details)
+	when 'hotel'
+		details = get_hotel_details
+		add_hotel_reservation_to_db(username, details)
+	end
+end
+
+def delete_flight_reservation_to_db(username, details)
+	db.execute("DELETE FROM flights #{reservation_type + "s"} WHERE id=#{details[:id]}")
+end
+
+def delete_flight_details
+	details = {}
+
+	puts "Please type the id number of the reservation that you would like to delete: "
+	id = gets.chomp
+	details[:id] = id
+
+	details
+end
+_____________________________________________________________________
+
+
+
+def view_reservation(username, reservation_type)
+	case reservation_type
+	when 'flight'
+		details = modify_flight_details
+		view_hotel_reservations
+	when 'hotel'
+		details = modify_hotel_details
+		modify_reservation(username, details)
+	end
+end
+
+def view_flight_reservations
+	puts "Here are your upcoming flight reservations: "
+	selected_reservation = db.execute("SELECT * FROM flights WHERE owner='#{@username_input}'")
+
+	i = 0
+	while i < selected_reservation.length do
+		id = selected_reservation[i][0]
+		flightdate = selected_reservation[i][1]
+		originairport = selected_reservation[i][2]
+		destinationairport = selected_reservation[i][3]
+		puts "[#{id}] #{flightdate} flying from #{originairport} to #{destinationairport}."
+	i +=1
+	end
+end
+
+def view_hotel_reservations
+	puts "Here are you upcoming hotel reservations: "
+	selected_reservation = db.execute("SELECT * FROM hotels WHERE owner='#{@username_input}'")
+
+	i = 0
+	while i < selected_reservation.length do
+		id = selected_reservation[i][0]
+		hotel = selected_reservation[i][1]
+		checkin = selected_reservation[i][2]
+		checkout = selected_reservation[i][3]
+		puts "[#{id}] Staying at #{hotel} from #{checkin} to #{checkout}."
+	i +=1
+	end
+
+end
+
+
+_____________________________________________________________________
+
+
+puts "Put your username here: "
+username = gets.chomp
+
+puts "What type of reservation are you using?"
+reservation_type = gets.chomp
+
+puts "Do you want to add, modify, delete, or view existing reservation?"
+notification_type = gets.chomp
+
+case modification_type
+when 'add'
+	add_reservation(username, reservation_type)
+when 'modify'
+	modify_reservation(username, reservation_type)
+when 'delete'
+	delete_reservation(username, reservation_type)
+when 'view'
+	view_reservation(username, reservation_type)
+end
+
+
+
+def create_unpw(db, username, password)
 	begin
-		db.execute("INSERT INTO logins (username, password) VALUES (?, ?)", [desired_username, desired_password])
+		db.execute("INSERT INTO logins (username, password) VALUES (?, ?)", [username, password])
 	rescue
 		puts "Sorry, pick another username, that one is taken."
 		enter_login_information(db)
 	end
 end
 
-def initial_prompt(db)
-puts "Is this your first time at Reservation Keeper? y/n"
-response = gets.chomp
 
-	if response == "y"
-		@new_member = true
-		puts "Welcome to Reservation Keeper!"
+# set a condition that if username already exists, prompt user 
+def check_existing_username(db, username, password)
+	begin
+		db.execute("INSERT INTO logins (username, password) VALUES (?, ?)", [username, password])
+	rescue
+		puts "Sorry, pick another username, that one is taken."
 		enter_login_information(db)
-	elsif response == "n"
-		@new_member = false
-		puts "Welcome back! Please enter your username: "
-		@username_input = gets.chomp
-		puts "Please enter your password: "
-		password_input = gets.chomp
-		add_reservation(db, @username_input)
-	else
-		puts "I am sorry but I do not understand what you typed."
-		initial_prompt(db)
 	end
 end
 
-def enter_login_information(db)
+# create a new username
+
+def create_login
+	login_information = {}
+
+	puts "Welcome to Reservation Keeper!"
+
 	puts "Please enter your desired username: "
-	@desired_username = gets.chomp
+	username = gets.chomp
+	login_information[:username] = username
+
 	puts "Please enter your password: "
-	desired_password = gets.chomp
-	create_unpw(db, @desired_username, desired_password)
-	add_reservation(db, @desired_username)
+	password = gets.chomp
+	login_information[:password] = password
+
+	login_information
 end
 
-def modifications(db)
-	print_reservations(db)
+puts "Is this your first time at Reservation Keeper? (y/n)"
+first_time_inquiry = gets.chomp
 
-	puts "Did you want to add or modify any additional reservations? add/modify/no"
-	response = gets.chomp
+case first_time_inquiry
+when 'y'
+	create_login_prompt
+when 'n'
+	# welcome back statement
+end
 
-	if response == "add"
-		add_reservation(db, username)
-	elsif response == "modify"
-		modify_reservation(db)
-	elsif response == "no"
-		puts "Then we are all done"
-	else
-		puts "I'm sorry. I did not understand that."
-		modifications(db)
+
+
+
+def creating_login(username, reservation_type)
+	case reservation_type
+	when 'flight'
+		details = modify_flight_details
+		modify_reservation(username, details, reservation_type)
+	when 'hotel'
+		details = modify_hotel_details
+		modify_reservation(username, details)
 	end
 end
 
-def print_reservations(db)
-	if @reservation_type == "hotel"
-		selected_reservation = db.execute("SELECT * FROM hotels WHERE owner='#{@username_input}'")
+def modify_reservation_to_db(username, details, reservation_type)
+	db.execute("UPDATE #{reservation_type + "s"} SET #{details[:incorrect_entry]}=#{details[:update_entry]} WHERE owner=@username_input")
+end
 
-		i = 0
-		while i < selected_reservation.length do
-			id = selected_reservation[i][0]
-			hotel = selected_reservation[i][1]
-			checkin = selected_reservation[i][2]
-			checkout = selected_reservation[i][3]
-			puts "[#{id}] You will be staying at #{hotel} from #{checkin} to #{checkout}."
-			i +=1
-		end
+def modify_flight_details
+	details = {}
 
-		
-	# else
-	# 	db.execute("SELECT * FROM flights WHERE owner='@desired_username'")
-	# 	flight_date = selected_reservation[0][1]
-	# 	origin_airport = selected_reservation[0][2]
-	# 	destination_airport = selected_reservation[0][3]
-	# 	puts "You are flying on #{flight_date} from #{origin_airport} to #{destination_airport}."
-	end
+	puts "Please select which is incorrect: \n-hotel name \n-check in \n-check out"
+	incorrect_entry = gets.chomp
+	incorrect_entry = incorrect_entry.tr(" ", "_")
+	details[:incorrect_entry] = incorrect_entry
 
+	puts "Please enter the correct information: "
+	correct_entry = gets.chomp
+	details[:correct_entry] = correct_entry
+
+	details
 end
 
 
 
 
 
-# driver code
-initial_prompt(db)
 
-# order by date
 
-# special features
-# your next reservation is:
+
 
 
 
