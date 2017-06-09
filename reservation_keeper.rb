@@ -140,7 +140,7 @@ def column_name_converter(user_input)
 end
 
 def modify_reservation_to_db(db, details)
-	db.execute("UPDATE #{details[:reservation_type] + "s"} SET #{details[:incorrect_column]}='#{details[:correct_entry]}' WHERE id=#{details[:id]}")
+	db.execute("UPDATE #{details[:reservation_types]} SET #{details[:incorrect_column]}='#{details[:correct_entry]}' WHERE id=#{details[:id]}")
 end
 
 def modify_flight_details(details)
@@ -192,7 +192,7 @@ end
 # _____________________________________________________________________
 
 def delete_reservation_from_db(db, details)
-	db.execute("DELETE FROM #{details[:reservation_type] + "s"} WHERE id=#{details[:id]}")
+	db.execute("DELETE FROM #{details[:reservation_types]} WHERE id=#{details[:id]}")
 end
 
 def delete_details(details)
@@ -210,13 +210,7 @@ def delete_reservation(db, details)
 end
 # _____________________________________________________________________
 
-
-
-def view_flight_reservations(db, details)
-	puts "Here are your upcoming flight reservations: "
-	p details
-	selected_reservation = db.execute("SELECT * FROM flights WHERE owner='#{details[:username]}'")
-
+def print_flight_reservations(db, details, selected_reservation)
 	i = 0
 	while i < selected_reservation.length do
 		id = selected_reservation[i][0]
@@ -228,10 +222,7 @@ def view_flight_reservations(db, details)
 	end
 end
 
-def view_hotel_reservations(db, details)
-	puts "Here are you upcoming hotel reservations: "
-	selected_reservation = db.execute("SELECT * FROM hotels WHERE owner='#{details[:username]}'")
-
+def print_hotel_reservations(db, details, selected_reservation)
 	i = 0
 	while i < selected_reservation.length do
 		id = selected_reservation[i][0]
@@ -243,12 +234,18 @@ def view_hotel_reservations(db, details)
 	end
 end
 
+def view_reservations(db, details)
+	puts "Here are your upcoming #{details[:reservation_type]} reservations: "
+	selected_reservation = db.execute("SELECT * FROM #{details[:reservation_types]} WHERE owner='#{details[:username]}'")
+end
+
 def view_reservation(db, details)
+	selected_reservation = view_reservations(db, details)
 	case details[:reservation_type]
 	when 'flight'
-		view_flight_reservations(db, details)
+		print_flight_reservations(db, details, selected_reservation)
 	when 'hotel'
-		view_hotel_reservations(db, details)
+		print_hotel_reservations(db, details, selected_reservation)
 	end
 end
 
@@ -271,6 +268,7 @@ reservation_type = gets.chomp
 		puts "Do you want to add, modify, delete, or view existing reservation?"
 		modification_type = gets.chomp
 		details[:reservation_type] = reservation_type
+		details[:reservation_types] = reservation_type + "s"
 			case modification_type
 			when 'add'
 				add_reservation(db, details)
