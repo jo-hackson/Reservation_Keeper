@@ -1,7 +1,7 @@
-# # reservation keeper
-# # assumption: that all reservations are for 2017
-# # assumption: that password entered is correct
-# # assumption: all input is correctly formatted
+# assumption: that all reservations are for 2017
+# assumption: that password entered is correct
+# assumption: all input is correctly formatted
+
 
 require 'sqlite3'
 require 'date'
@@ -115,18 +115,55 @@ end
 # _____________________________________________________________________
 
 
-
-def modify_reservation_to_db(db, username, details, reservation_type)
-	db.execute("UPDATE #{reservation_type + "s"} SET #{details[:incorrect_entry]}=#{details[:update_entry]} WHERE owner=@username_input")
+def modify_reservation_to_db(db, details)
+	db.execute("UPDATE #{details[:reservation_type] + "s"} SET #{details[:incorrect_column]}='#{details[:correct_entry]}' WHERE id=#{details[:id]}")
+	# by ID
 end
 
-def modify_flight_details
-	details = {}
+def column_name_converter(user_input)
+	user_input = user_input.tr(" ", "_")
+	return user_input
+end
+
+def modify_flight_details(details, reservation_type)
+
+	details[:reservation_type] = reservation_type
+
+	puts "Please type the id number of the reservation that you would like to modify: "
+	id = gets.chomp
+	details[:id] = id
+
+	puts "Please select which is incorrect: \n-flight date \n-origin airport \n-destination airport"
+	incorrect_column = gets.chomp
+	details[:incorrect_column] = column_name_converter(incorrect_column)
+
+	puts "Please enter the correct information: "
+	correct_entry = gets.chomp
+
+	if incorrect_column == "flight date"
+		details[:correct_entry] = date_converter(correct_entry)
+	elsif incorrect_column == "origin airport" || incorrect_column == "destination_airport"
+		details[:correct_entry] = correct_entry.upcase!
+	else
+		puts "Sorry, I did not understand your input."
+	end
+
+	return details
+end
+
+def modify_hotel_details(details)
+
+	# details = {}
+	# details[:reservation_type] = reservation_type
+
+	puts "Please type the id number of the reservation that you would like to delete: "
+	id = gets.chomp
+	details[:id] = id
 
 	puts "Please select which is incorrect: \n-hotel name \n-check in \n-check out"
-	incorrect_entry = gets.chomp
-	incorrect_entry = incorrect_entry.tr(" ", "_")
-	details[:incorrect_entry] = incorrect_entry
+	incorrect_column = gets.chomp
+	incorrect_column = incorrect_column.tr(" ", "_")
+	details[:incorrect_column] = incorrect_column
 
 	puts "Please enter the correct information: "
 	correct_entry = gets.chomp
@@ -135,36 +172,20 @@ def modify_flight_details
 	details
 end
 
-def modify_hotel_details
-	details = {}
-
-	puts "What is the name of your hotel?"
-	hotel_name = gets.chomp
-	details[:hotel_name] = hotel_name
-
-	puts "When will you be checking in?"
-	check_in = gets.chomp
-	details[:check_in ] = check_in 
-
-	puts "When will you be checking out?"
-	check_our = gets.chomp
-	details[:check_our] = check_our
-
-	details
-end
-
 def modify_reservation(db, details, reservation_type)
+	# should see all reservation_type reservations
 	case reservation_type
 	when 'flight'
-		details = modify_flight_details
-		modify_reservation(username, details, reservation_type)
+		details = modify_flight_details(details, reservation_type)
+		modify_reservation_to_db(db, details)
+		puts "Your flight has been modified."
+		# puts "Your flight has been updated as follows: #{details[:flight_date]} from #{details[:origin_airport]} to #{details[:destination_airport]}."
 	when 'hotel'
-		details = modify_hotel_details
-		modify_reservation(username, details)
+		details = modify_hotel_details(details)
+		modify_reservation_to_db(db, details)
+		puts "hotel modified"
 	end
 end
-
-
 
 # _____________________________________________________________________
 
@@ -209,7 +230,6 @@ def view_flight_reservations(db, details)
 		puts "[#{id}] #{flightdate} flying from #{originairport} to #{destinationairport}."
 	i +=1
 	end
-	reservation_menu(db, details)
 end
 
 def view_hotel_reservations(db, details)
@@ -234,7 +254,6 @@ def view_reservation(db, details, reservation_type)
 	when 'hotel'
 		view_hotel_reservations(db, details)
 	end
-	reservation_menu(db, details)
 end
 
 
@@ -260,12 +279,14 @@ reservation_type = gets.chomp
 			when 'add'
 				add_reservation(db, details, reservation_type)
 			when 'modify'
+				view_reservation(db, details, reservation_type)
 				modify_reservation(db, details, reservation_type)
 			when 'delete'
 				delete_reservation(db, details, reservation_type)
 			when 'view'
 				view_reservation(db, details, reservation_type)
 			end
+			reservation_menu(db, details)
 		end
 	end
 end
