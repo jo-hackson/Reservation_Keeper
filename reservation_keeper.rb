@@ -237,18 +237,23 @@ end
 # check if username already exists
 def check_old_username(db, login_information)
 
-	login_array = db.execute("SELECT * FROM logins")
+	login_array = db.execute("SELECT username FROM logins")
 
 	i = 0
 	while i < login_array.length do
-	  if login_array[i]["username"] != login_information[:username] then
-	  	break
-	  end
+		if login_array[i]["username"] == login_information[:username]
+			matches = TRUE
+			break
+		end
 	i += 1
 	end
 
-	puts "Sorry, that username does not exist in the database."
-	new_login(db)
+	if !matches 	
+		puts "Sorry, that username does not exist in the database."
+		new_login(db)
+	else
+		puts "Welcome back #{login_information[:username]}!"
+	end
 end
 
 # have user input their username
@@ -310,7 +315,7 @@ puts "What type of reservation are you using?"
 reservation_type = gets.chomp
 
 puts "Do you want to add, modify, delete, or view existing reservation?"
-notification_type = gets.chomp
+modification_type = gets.chomp
 
 case modification_type
 when 'add'
