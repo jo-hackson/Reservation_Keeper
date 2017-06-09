@@ -104,7 +104,7 @@ def get_hotel_details
 	details
 end
 
-_____________________________________________________________________
+# _____________________________________________________________________
 
 def modify_reservation(username, reservation_type)
 	case reservation_type
@@ -156,7 +156,7 @@ end
 
 
 
-_____________________________________________________________________
+# _____________________________________________________________________
 
 
 def delete_reservation(username, reservation_type)
@@ -183,7 +183,7 @@ def delete_flight_details
 
 	details
 end
-_____________________________________________________________________
+# _____________________________________________________________________
 
 
 
@@ -230,11 +230,53 @@ def view_hotel_reservations
 end
 
 
-_____________________________________________________________________
+# _____________________________________________________________________
+
+# set a condition that if username already exists, prompt user 
+def check_existing_username(db, login_information)
+	p login_information
+	p login_information[:username]
+	p login_information[:password]
+	begin
+		db.execute("INSERT INTO logins (username, password) VALUES (?, ?)", [login_information[:username], login_information[:password]])
+	rescue
+		puts "Sorry, pick another username, that one is taken."
+		new_login(db)
+	end
+end
+
+# create a new username
+def new_login(db)
+	login_information = {}
+
+	puts "Please enter your desired username: "
+	username = gets.chomp
+	login_information[:username] = username
+
+	puts "Please enter your password: "
+	password = gets.chomp
+	login_information[:password] = password
+
+	check_existing_username(db, login_information)
+	login_information
+end
+
+def creating_login(db, first_time_inquiry)
+	case first_time_inquiry
+	when 'y'
+		puts "Welcome to Reservation Keeper!"	
+		details = new_login(db)
+		# next method
+	when 'n'
+		details = return_user_information
+		# modify_reservation(username, details)
+	end
+end
 
 
-puts "Put your username here: "
-username = gets.chomp
+puts "Is this your first time at Reservation Keeper? (y/n)"
+first_time_inquiry = gets.chomp
+creating_login(db, first_time_inquiry)
 
 puts "What type of reservation are you using?"
 reservation_type = gets.chomp
@@ -252,93 +294,6 @@ when 'delete'
 when 'view'
 	view_reservation(username, reservation_type)
 end
-
-
-
-def create_unpw(db, username, password)
-	begin
-		db.execute("INSERT INTO logins (username, password) VALUES (?, ?)", [username, password])
-	rescue
-		puts "Sorry, pick another username, that one is taken."
-		enter_login_information(db)
-	end
-end
-
-
-# set a condition that if username already exists, prompt user 
-def check_existing_username(db, username, password)
-	begin
-		db.execute("INSERT INTO logins (username, password) VALUES (?, ?)", [username, password])
-	rescue
-		puts "Sorry, pick another username, that one is taken."
-		enter_login_information(db)
-	end
-end
-
-# create a new username
-
-def create_login
-	login_information = {}
-
-	puts "Welcome to Reservation Keeper!"
-
-	puts "Please enter your desired username: "
-	username = gets.chomp
-	login_information[:username] = username
-
-	puts "Please enter your password: "
-	password = gets.chomp
-	login_information[:password] = password
-
-	login_information
-end
-
-puts "Is this your first time at Reservation Keeper? (y/n)"
-first_time_inquiry = gets.chomp
-
-case first_time_inquiry
-when 'y'
-	create_login_prompt
-when 'n'
-	# welcome back statement
-end
-
-
-
-
-def creating_login(username, reservation_type)
-	case reservation_type
-	when 'flight'
-		details = modify_flight_details
-		modify_reservation(username, details, reservation_type)
-	when 'hotel'
-		details = modify_hotel_details
-		modify_reservation(username, details)
-	end
-end
-
-def modify_reservation_to_db(username, details, reservation_type)
-	db.execute("UPDATE #{reservation_type + "s"} SET #{details[:incorrect_entry]}=#{details[:update_entry]} WHERE owner=@username_input")
-end
-
-def modify_flight_details
-	details = {}
-
-	puts "Please select which is incorrect: \n-hotel name \n-check in \n-check out"
-	incorrect_entry = gets.chomp
-	incorrect_entry = incorrect_entry.tr(" ", "_")
-	details[:incorrect_entry] = incorrect_entry
-
-	puts "Please enter the correct information: "
-	correct_entry = gets.chomp
-	details[:correct_entry] = correct_entry
-
-	details
-end
-
-
-
-
 
 
 
