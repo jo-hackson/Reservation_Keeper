@@ -7,6 +7,7 @@ require 'sqlite3'
 require 'date'
 
 db = SQLite3::Database.new("reservations.db")
+db.results_as_hash = true
 
 # database tables creation
 create_logins_table = <<-SQL
@@ -232,11 +233,38 @@ end
 
 # _____________________________________________________________________
 
+
+# check if username already exists
+def check_old_username(db, login_information)
+
+	login_array = db.execute("SELECT * FROM logins")
+
+	i = 0
+	while i < login_array.length do
+	  if login_array[i]["username"] != login_information[:username] then
+	  	break
+	  end
+	i += 1
+	end
+
+	puts "Sorry, that username does not exist in the database."
+	new_login(db)
+end
+
+# have user input their username
+def return_user(db)
+	login_information = {}
+
+	puts "Please enter your username: "
+	username = gets.chomp
+	login_information[:username] = username
+
+	check_old_username(db, login_information)
+	login_information
+end
+
 # set a condition that if username already exists, prompt user 
-def check_existing_username(db, login_information)
-	p login_information
-	p login_information[:username]
-	p login_information[:password]
+def check_new_username(db, login_information)
 	begin
 		db.execute("INSERT INTO logins (username, password) VALUES (?, ?)", [login_information[:username], login_information[:password]])
 	rescue
@@ -257,7 +285,7 @@ def new_login(db)
 	password = gets.chomp
 	login_information[:password] = password
 
-	check_existing_username(db, login_information)
+	check_new_username(db, login_information)
 	login_information
 end
 
@@ -268,7 +296,7 @@ def creating_login(db, first_time_inquiry)
 		details = new_login(db)
 		# next method
 	when 'n'
-		details = return_user_information
+		details = return_user(db)
 		# modify_reservation(username, details)
 	end
 end
