@@ -1,6 +1,7 @@
 # assumption: that all reservations are for 2017
 # assumption: that password entered is correct
 # assumption: all input is correctly formatted
+# assumption: that user will select an input presented to them
 
 
 require 'sqlite3'
@@ -142,7 +143,7 @@ def modify_flight_details(details, reservation_type)
 
 	if incorrect_column == "flight date"
 		details[:correct_entry] = date_converter(correct_entry)
-	elsif incorrect_column == "origin airport" || incorrect_column == "destination_airport"
+	elsif incorrect_column == "origin airport" || incorrect_column == "destination airport"
 		details[:correct_entry] = correct_entry.upcase!
 	else
 		puts "Sorry, I did not understand your input."
@@ -194,29 +195,25 @@ end
 
 # _____________________________________________________________________
 
-def delete_flight_reservation_to_db(db, username, details)
-	db.execute("DELETE FROM flights #{reservation_type + "s"} WHERE id=#{details[:id]}")
+def delete_reservation_from_db(db, details, reservation_type)
+	db.execute("DELETE FROM #{reservation_type + "s"} WHERE id=#{details[:id]}")
 end
 
-def delete_flight_details
-	details = {}
+def delete_details(details, reservation_type)
+
+	details[:reservation_type] = reservation_type
 
 	puts "Please type the id number of the reservation that you would like to delete: "
 	id = gets.chomp
 	details[:id] = id
 
-	details
+	return details
 end
 
 def delete_reservation(db, details, reservation_type)
-	case reservation_type
-	when 'flight'
-		details = get_flight_details
-		add_flight_reservation_to_db(username, details)
-	when 'hotel'
-		details = get_hotel_details
-		add_hotel_reservation_to_db(username, details)
-	end
+ 	details = delete_details(details, reservation_type)
+	delete_reservation_from_db(db, details, reservation_type)
+	puts "Your #{reservation_type} reservation information has been deleted."
 end
 # _____________________________________________________________________
 
@@ -287,6 +284,7 @@ reservation_type = gets.chomp
 				view_reservation(db, details, reservation_type)
 				modify_reservation(db, details, reservation_type)
 			when 'delete'
+				view_reservation(db, details, reservation_type)
 				delete_reservation(db, details, reservation_type)
 			when 'view'
 				view_reservation(db, details, reservation_type)
