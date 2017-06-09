@@ -45,6 +45,17 @@ db.execute(create_hotels_table)
 db.execute(create_flights_table)
 
 # ____________________________________________________________________
+# work in progress
+# def exists(db, login_information)
+# 	begin
+# 		db.execute("INSERT INTO logins (username, password) VALUES (?, ?)", [login_information[:username], login_information[:password]])
+# 	rescue
+# 		puts "Sorry, pick another username, that one is taken."
+# 		new_login(db)
+# 	end
+# end
+
+# ____________________________________________________________________
 
 def date_converter(user_input)
 	user_input = user_input.split("")
@@ -60,9 +71,7 @@ def add_flight_reservation_to_db(db, details)
 		VALUES (?, ?, ?, ?)", [details[:flight_date], details[:origin_airport], details[:destination_airport], details[:username]])
 end
 
-def add_flight_details
-	details = {}
-
+def add_flight_details(details)
 	puts "What is the date of your flight? (ie 4/5)"
 	flight_date = gets.chomp
 	details[:flight_date] = date_converter(flight_date)
@@ -74,7 +83,7 @@ def add_flight_details
 	puts "What is the airport you are flying to? (ie AUS)"
 	destination_airport = gets.chomp.upcase!
 	details[:destination_airport] = destination_airport
-
+	puts "On #{details[:flight_date]}, you will be flying from #{details[:origin_airport]} to #{details[:destination_airport]}."
 	details
 end
 
@@ -82,9 +91,7 @@ def add_hotel_reservation_to_db(db, details)
 	db.execute("INSERT INTO hotels (hotel_name, check_in, check_out, owner) VALUES (?, ?, ?, ?)", [details[:hotel_name], details[:check_in], details[:check_out], details[:username]])
 end
 
-def add_hotel_details
-	details = {}
-
+def add_hotel_details(details)
 	puts "What is the name of your hotel?"
 	hotel_name = gets.chomp.capitalize
 	details[:hotel_name] = hotel_name
@@ -96,29 +103,35 @@ def add_hotel_details
 	puts "When will you be checking out? (ie 2/6)"
 	check_out = gets.chomp
 	details[:check_out] = date_converter(check_out)
-
+	puts "You will be staying at the #{details[:hotel_name]} from #{details[:check_in]} to #{details[:check_out]}."
 	details
 end
 
-def add_reservation(db, details, reservation_type)
-	case reservation_type
+def add_reservation(db, details)
+	case details[:reservation_type]
 	when 'flight'
-		details = add_flight_details
+		details = add_flight_details(details)
 		add_flight_reservation_to_db(db, details)
-		puts "On #{details[:flight_date]}, you will be flying from #{details[:origin_airport]} to #{details[:destination_airport]}."
 	when 'hotel'
-		details = add_hotel_details
+		details = add_hotel_details(details)
 		add_hotel_reservation_to_db(db, details)
-		puts "You will be staying at the #{details[:hotel_name]} from #{details[:check_in]} to #{details[:check_out]}."
 	end
 end
 
 # _____________________________________________________________________
 
 
-def modify_reservation_to_db(db, details)
-	db.execute("UPDATE #{details[:reservation_type] + "s"} SET #{details[:incorrect_column]}='#{details[:correct_entry]}' WHERE id=#{details[:id]}")
-	# by ID
+def standardize_input(details)
+	if details[:incorrect_column] == "flight_date" || details[:incorrect_column] == "check_in" || details[:incorrect_column] == "check_out"
+		details[:correct_entry] = date_converter(details[:correct_entry])
+	elsif details[:incorrect_column] == "origin_airport" || details[:incorrect_column] == "destination_airport"
+		details[:correct_entry] = details[:correct_entry].upcase!
+	elsif details[:incorrect_column] == "hotel_name"
+		details[:correct_entry] = details[:correct_entry].capitalize
+	else
+		puts "Sorry, I did not understand your input."
+	end
+	return details
 end
 
 def column_name_converter(user_input)
@@ -126,10 +139,11 @@ def column_name_converter(user_input)
 	return user_input
 end
 
-def modify_flight_details(details, reservation_type)
+def modify_reservation_to_db(db, details)
+	db.execute("UPDATE #{details[:reservation_type] + "s"} SET #{details[:incorrect_column]}='#{details[:correct_entry]}' WHERE id=#{details[:id]}")
+end
 
-	details[:reservation_type] = reservation_type
-
+def modify_flight_details(details)
 	puts "Please type the id number of the reservation that you would like to modify: "
 	id = gets.chomp
 	details[:id] = id
@@ -140,22 +154,12 @@ def modify_flight_details(details, reservation_type)
 
 	puts "Please enter the correct information: "
 	correct_entry = gets.chomp
-
-	if incorrect_column == "flight date"
-		details[:correct_entry] = date_converter(correct_entry)
-	elsif incorrect_column == "origin airport" || incorrect_column == "destination airport"
-		details[:correct_entry] = correct_entry.upcase!
-	else
-		puts "Sorry, I did not understand your input."
-	end
-
+	details[:correct_entry] = correct_entry
+	standardize_input(details)
 	return details
 end
 
-def modify_hotel_details(details, reservation_type)
-
-	details[:reservation_type] = reservation_type
-
+def modify_hotel_details(details)
 	puts "Please type the id number of the reservation that you would like to <modify></modify>: "
 	id = gets.chomp
 	details[:id] = id
@@ -166,28 +170,20 @@ def modify_hotel_details(details, reservation_type)
 
 	puts "Please enter the correct information: "
 	correct_entry = gets.chomp
-
-	if incorrect_column == "check in" || incorrect_column == "check out"
-		details[:correct_entry] = date_converter(correct_entry)
-	elsif incorrect_column == "hotel name"
-		details[:correct_entry] = correct_entry.capitalize
-	else
-		puts "Sorry, I did not understand your input."
-	end
-
+	details[:correct_entry] = correct_entry
+	standardize_input(details)
 	return details
 end
 
-def modify_reservation(db, details, reservation_type)
-	# should see all reservation_type reservations
-	case reservation_type
+def modify_reservation(db, details)
+	case details[:reservation_type]
 	when 'flight'
-		details = modify_flight_details(details, reservation_type)
+		details = modify_flight_details(details)
 		modify_reservation_to_db(db, details)
 		puts "Your flight has been modified."
 		# puts "Your flight has been updated as follows: #{details[:flight_date]} from #{details[:origin_airport]} to #{details[:destination_airport]}."
 	when 'hotel'
-		details = modify_hotel_details(details, reservation_type)
+		details = modify_hotel_details(details)
 		modify_reservation_to_db(db, details)
 		puts "Your hotel has been modified."
 	end
@@ -195,25 +191,22 @@ end
 
 # _____________________________________________________________________
 
-def delete_reservation_from_db(db, details, reservation_type)
-	db.execute("DELETE FROM #{reservation_type + "s"} WHERE id=#{details[:id]}")
+def delete_reservation_from_db(db, details)
+	db.execute("DELETE FROM #{details[:reservation_type] + "s"} WHERE id=#{details[:id]}")
 end
 
-def delete_details(details, reservation_type)
-
-	details[:reservation_type] = reservation_type
+def delete_details(details)
 
 	puts "Please type the id number of the reservation that you would like to delete: "
 	id = gets.chomp
 	details[:id] = id
-
 	return details
 end
 
-def delete_reservation(db, details, reservation_type)
- 	details = delete_details(details, reservation_type)
-	delete_reservation_from_db(db, details, reservation_type)
-	puts "Your #{reservation_type} reservation information has been deleted."
+def delete_reservation(db, details)
+ 	details = delete_details(details)
+	delete_reservation_from_db(db, details)
+	puts "Your #{details[:reservation_type]} reservation information has been deleted."
 end
 # _____________________________________________________________________
 
@@ -221,6 +214,7 @@ end
 
 def view_flight_reservations(db, details)
 	puts "Here are your upcoming flight reservations: "
+	p details
 	selected_reservation = db.execute("SELECT * FROM flights WHERE owner='#{details[:username]}'")
 
 	i = 0
@@ -249,8 +243,8 @@ def view_hotel_reservations(db, details)
 	end
 end
 
-def view_reservation(db, details, reservation_type)
-	case reservation_type
+def view_reservation(db, details)
+	case details[:reservation_type]
 	when 'flight'
 		view_flight_reservations(db, details)
 	when 'hotel'
@@ -267,7 +261,6 @@ puts "What type of reservation do you want to access? (hotel, flight, or done)"
 reservation_type = gets.chomp
 
 	if reservation_type == "done"
-		# exit program
 	else
 		begin
 			db.execute("SELECT * FROM #{reservation_type + "s"}")
@@ -277,17 +270,18 @@ reservation_type = gets.chomp
 		ensure
 		puts "Do you want to add, modify, delete, or view existing reservation?"
 		modification_type = gets.chomp
+		details[:reservation_type] = reservation_type
 			case modification_type
 			when 'add'
-				add_reservation(db, details, reservation_type)
+				add_reservation(db, details)
 			when 'modify'
-				view_reservation(db, details, reservation_type)
-				modify_reservation(db, details, reservation_type)
+				view_reservation(db, details)
+				modify_reservation(db, details)
 			when 'delete'
-				view_reservation(db, details, reservation_type)
-				delete_reservation(db, details, reservation_type)
+				view_reservation(db, details)
+				delete_reservation(db, details)
 			when 'view'
-				view_reservation(db, details, reservation_type)
+				view_reservation(db, details)
 			end
 			reservation_menu(db, details)
 		end
@@ -297,13 +291,13 @@ end
 # _____________________________________________________________________
 
 # check if username already exists
-def check_old_username(db, login_information)
+def check_old_username(db, details)
 
 	login_array = db.execute("SELECT username FROM logins")
 
 	i = 0
 	while i < login_array.length do
-		if login_array[i]["username"] == login_information[:username]
+		if login_array[i]["username"] == details[:username]
 			matches = TRUE
 			break
 		end
@@ -314,20 +308,20 @@ def check_old_username(db, login_information)
 		puts "Sorry, that username does not exist in the database."
 		new_login(db)
 	else
-		puts "Welcome back #{login_information[:username]}!"
+		puts "Welcome back #{details[:username]}!"
 	end
 end
 
 # have user input their username
 def return_user(db)
-	login_information = {}
+	details = {}
 
 	puts "Please enter your username: "
 	username = gets.chomp
-	login_information[:username] = username
+	details[:username] = username
 
-	check_old_username(db, login_information)
-	login_information
+	check_old_username(db, details)
+	details
 end
 
 # set a condition that if username already exists, prompt user 
@@ -342,18 +336,18 @@ end
 
 # create a new username
 def new_login(db)
-	login_information = {}
+	details = {}
 
 	puts "Please enter your desired username: "
 	username = gets.chomp
-	login_information[:username] = username
+	details[:username] = username
 
 	puts "Please enter your password: "
 	password = gets.chomp
-	login_information[:password] = password
+	details[:password] = password
 
-	check_new_username(db, login_information)
-	login_information
+	check_new_username(db, details)
+	return details
 end
 
 def creating_login(db, first_time_inquiry)
@@ -366,7 +360,6 @@ def creating_login(db, first_time_inquiry)
 	end
 	reservation_menu(db, details)
 end
-
 
 puts "Is this your first time at Reservation Keeper? (y/n)"
 first_time_inquiry = gets.chomp
