@@ -2,6 +2,7 @@
 # assumption: that password entered is correct
 # assumption: all input is correctly formatted
 # assumption: that user will select an input presented to them
+# print updated reservation after add/modified/deleted.
 
 
 require 'sqlite3'
@@ -57,11 +58,19 @@ db.execute(create_flights_table)
 
 # ____________________________________________________________________
 
+# from add, modify, delete
+def print_updated_reservation(db, details)
+
+	if details[:modification_type] == "add"
+
+	end
+end
+
 def date_converter(user_input)
-	user_input = user_input.split("")
+	user_input = user_input.split("/")
 	month = user_input[0].to_i
 	month = Date::MONTHNAMES[month]
-	day = user_input[2]
+	day = user_input[1]
 	full_date = month + " " + day
 	return full_date
 end
@@ -323,9 +332,9 @@ def return_user(db)
 end
 
 # set a condition that if username already exists, prompt user 
-def check_new_username(db, login_information)
+def check_new_username(db, details)
 	begin
-		db.execute("INSERT INTO logins (username, password) VALUES (?, ?)", [login_information[:username], login_information[:password]])
+		db.execute("INSERT INTO logins (username, password) VALUES (?, ?)", [details[:username], details[:password]])
 	rescue
 		puts "Sorry, pick another username, that one is taken."
 		new_login(db)
