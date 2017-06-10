@@ -60,9 +60,20 @@ db.execute(create_flights_table)
 
 # from add, modify, delete
 def print_updated_reservation(db, details)
-
-	if details[:modification_type] == "add"
-
+	if details[:modification_type] == "add" && details[:reservation_type] == "flight"
+		puts "Your flight reservation on #{details[:flight_date]} from #{details[:origin_airport]} #{details[:destination_airport]} has been added."
+	elsif details[:modification_type] == "add" && details[:reservation_type] == "hotel"
+		puts "Your hotel reservation at #{details[:hotel_name]} from #{details[:check_in]} to #{details[:check_out]} has been added."
+	elsif details[:modification_type] == "modify" && details[:reservation_type] == "flight"
+		puts "Your flight reservation on #{details[:flight_date]} from #{details[:origin_airport]} #{details[:destination_airport]} has been modified."
+	elsif details[:modification_type] == "modify" && details[:reservation_type] == "hotel"
+		puts "Your hotel reservation at #{details[:hotel_name]} from #{details[:check_in]} to #{details[:check_out]} has been added."
+	elsif details[:modification_type] == "delete" && details[:reservation_type] == "flight"
+		puts "Your flight reservation on #{details[:flight_date]} from #{details[:origin_airport]} #{details[:destination_airport]} has been deleted."
+	elsif details[:modification_type] == "delete" && details[:reservation_type] == "hotel"
+		puts "Your hotel reservation at #{details[:hotel_name]} from #{details[:check_in]} to #{details[:check_out]} has been added."
+	else
+		puts "Sorry, your input was incomprehensible."
 	end
 end
 
@@ -112,7 +123,7 @@ def add_hotel_details(details)
 	puts "When will you be checking out? (ie 2/6)"
 	check_out = gets.chomp
 	details[:check_out] = date_converter(check_out)
-	puts "You will be staying at the #{details[:hotel_name]} from #{details[:check_in]} to #{details[:check_out]}."
+	# puts "You will be staying at the #{details[:hotel_name]} from #{details[:check_in]} to #{details[:check_out]}."
 	details
 end
 
@@ -125,6 +136,7 @@ def add_reservation(db, details)
 		details = add_hotel_details(details)
 		add_hotel_reservation_to_db(db, details)
 	end
+	print_updated_reservation(db, details)
 end
 
 # _____________________________________________________________________
@@ -196,6 +208,7 @@ def modify_reservation(db, details)
 		modify_reservation_to_db(db, details)
 		puts "Your hotel has been modified."
 	end
+	print_updated_reservation(db, details)
 end
 
 # _____________________________________________________________________
@@ -215,7 +228,8 @@ end
 def delete_reservation(db, details)
  	details = delete_details(details)
 	delete_reservation_from_db(db, details)
-	puts "Your #{details[:reservation_type]} reservation information has been deleted."
+	print_updated_reservation(db, details)
+	# puts "Your #{details[:reservation_type]} reservation information has been deleted."
 end
 # _____________________________________________________________________
 
@@ -276,6 +290,7 @@ reservation_type = gets.chomp
 		ensure
 		puts "Do you want to add, modify, delete, or view existing reservation?"
 		modification_type = gets.chomp
+		details[:modification_type] = modification_type
 		details[:reservation_type] = reservation_type
 		details[:reservation_types] = reservation_type + "s"
 			case modification_type
