@@ -185,7 +185,7 @@ def modify_flight_details(db, details)
 	return details
 end
 
-def modify_hotel_details(details)
+def modify_hotel_details(db, details)
 	puts "Please type the id number of the reservation that you would like to modify: "
 	id = gets.chomp
 	details[:id] = id
@@ -208,7 +208,7 @@ def modify_reservation(db, details)
 		details = modify_flight_details(db, details)
 		modify_reservation_to_db(db, details)
 	when 'hotel'
-		details = modify_hotel_details(details)
+		details = modify_hotel_details(db, details)
 		modify_reservation_to_db(db, details)
 	end
 	print_updated_reservation(db, details)
@@ -220,7 +220,7 @@ def delete_reservation_from_db(db, details)
 	db.execute("DELETE FROM #{details[:reservation_types]} WHERE id=#{details[:id]}")
 end
 
-def delete_details(details)
+def delete_details(db, details)
 	puts "Please type the id number of the reservation that you would like to delete: "
 	id = gets.chomp
 	details[:id] = id
@@ -229,7 +229,7 @@ def delete_details(details)
 end
 
 def delete_reservation(db, details)
- 	details = delete_details(details)
+ 	details = delete_details(db, details)
 	delete_reservation_from_db(db, details)
 	print_updated_reservation(db, details)
 end
@@ -329,6 +329,19 @@ end
 
 # _____________________________________________________________________
 
+
+def password_checker(db, details)
+
+	puts "Please enter your password."
+	password = gets.chomp
+	details[:password] = password
+
+	if (db.execute("SELECT * FROM logins WHERE username='#{details[:username]}'"))[0]["password"] != details[:password]
+		puts "Sorry, your username and password do not match."
+		return_user(db)
+	end
+end
+
 # check if username already exists
 def check_old_username(db, details)
 
@@ -342,6 +355,8 @@ def check_old_username(db, details)
 		end
 	i += 1
 	end
+
+	password_checker(db, details)
 
 	if !matches 	
 		puts "Sorry, that username does not exist in the database."
