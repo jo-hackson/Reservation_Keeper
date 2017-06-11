@@ -1,9 +1,5 @@
 # assumption: that all reservations are for 2017
-# assumption: that password entered is correct
-# assumption: all input is correctly formatted
-# assumption: that user will select an input presented to them
-# when users login, then view, information will not show up
-
+# assumption: that most input is correctly formatted
 
 require 'sqlite3'
 require 'date'
