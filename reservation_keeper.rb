@@ -2,7 +2,7 @@
 # assumption: that password entered is correct
 # assumption: all input is correctly formatted
 # assumption: that user will select an input presented to them
-# print updated reservation after add/modified/deleted.
+# when users login, then view, information will not show up
 
 
 require 'sqlite3'
@@ -45,36 +45,41 @@ db.execute(create_logins_table)
 db.execute(create_hotels_table)
 db.execute(create_flights_table)
 
-# ____________________________________________________________________
-# work in progress
-# def exists(db, login_information)
-# 	begin
-# 		db.execute("INSERT INTO logins (username, password) VALUES (?, ?)", [login_information[:username], login_information[:password]])
-# 	rescue
-# 		puts "Sorry, pick another username, that one is taken."
-# 		new_login(db)
-# 	end
-# end
 
 # ____________________________________________________________________
 
-# from add, modify, delete
-def print_updated_reservation(db, details)
-	if details[:modification_type] == "add" && details[:reservation_type] == "flight"
-		puts "Your flight reservation on #{details[:flight_date]} from #{details[:origin_airport]} #{details[:destination_airport]} has been added."
-	elsif details[:modification_type] == "add" && details[:reservation_type] == "hotel"
-		puts "Your hotel reservation at #{details[:hotel_name]} from #{details[:check_in]} to #{details[:check_out]} has been added."
-	elsif details[:modification_type] == "modify" && details[:reservation_type] == "flight"
-		puts "Your flight reservation on #{details[:flight_date]} from #{details[:origin_airport]} #{details[:destination_airport]} has been modified."
-	elsif details[:modification_type] == "modify" && details[:reservation_type] == "hotel"
-		puts "Your hotel reservation at #{details[:hotel_name]} from #{details[:check_in]} to #{details[:check_out]} has been added."
-	elsif details[:modification_type] == "delete" && details[:reservation_type] == "flight"
-		puts "Your flight reservation on #{details[:flight_date]} from #{details[:origin_airport]} #{details[:destination_airport]} has been deleted."
-	elsif details[:modification_type] == "delete" && details[:reservation_type] == "hotel"
-		puts "Your hotel reservation at #{details[:hotel_name]} from #{details[:check_in]} to #{details[:check_out]} has been added."
-	else
-		puts "Sorry, your input was incomprehensible."
+def check_id(db, details)
+
+	i = 0
+	id_exists = []
+	until i >= details[:selected_reservation].length
+	  if details[:selected_reservation][i]["id"] != details[:id].to_i
+	    id_exists << "false"
+	  end
+	  i += 1
 	end
+
+	if id_exists.include?("false")
+	  puts "Sorry, the id you input refers to a reservation is not in your name."
+	  modify_flight_details(db, details)
+	end
+end
+
+def print_updated_reservation(db, details)
+	case details[:reservation_type]
+	when 'flight'
+		if details[:flight_date] == nil 
+			puts "Your request to #{details[:modification_type]} your flight reservation is complete."
+		else
+			puts "Your request to #{details[:modification_type]} your flight reservation on #{details[:flight_date]} from #{details[:origin_airport]} to #{details[:destination_airport]} is complete."
+		end
+	when 'hotel'
+		if details[:hotel_name] == nil
+			puts "Your request to #{details[:modification_type]} your hotel reservation is complete."
+		else
+			puts "Your request to #{details[:modification_type]} your hotel reservation at #{details[:hotel_name]} from #{details[:check_in]} to #{details[:check_out]} is complete."
+		end
+	end	
 end
 
 def date_converter(user_input)
@@ -123,7 +128,6 @@ def add_hotel_details(details)
 	puts "When will you be checking out? (ie 2/6)"
 	check_out = gets.chomp
 	details[:check_out] = date_converter(check_out)
-	# puts "You will be staying at the #{details[:hotel_name]} from #{details[:check_in]} to #{details[:check_out]}."
 	details
 end
 
@@ -164,10 +168,11 @@ def modify_reservation_to_db(db, details)
 	db.execute("UPDATE #{details[:reservation_types]} SET #{details[:incorrect_column]}='#{details[:correct_entry]}' WHERE id=#{details[:id]}")
 end
 
-def modify_flight_details(details)
+def modify_flight_details(db, details)
 	puts "Please type the id number of the reservation that you would like to modify: "
 	id = gets.chomp
 	details[:id] = id
+	check_id(db, details)
 
 	puts "Please select which is incorrect: \n-flight date \n-origin airport \n-destination airport"
 	incorrect_column = gets.chomp
@@ -181,9 +186,10 @@ def modify_flight_details(details)
 end
 
 def modify_hotel_details(details)
-	puts "Please type the id number of the reservation that you would like to <modify></modify>: "
+	puts "Please type the id number of the reservation that you would like to modify: "
 	id = gets.chomp
 	details[:id] = id
+	check_id(db, details)
 
 	puts "Please select which is incorrect: \n-hotel name \n-check in \n-check out"
 	incorrect_column = gets.chomp
@@ -199,14 +205,11 @@ end
 def modify_reservation(db, details)
 	case details[:reservation_type]
 	when 'flight'
-		details = modify_flight_details(details)
+		details = modify_flight_details(db, details)
 		modify_reservation_to_db(db, details)
-		puts "Your flight has been modified."
-		# puts "Your flight has been updated as follows: #{details[:flight_date]} from #{details[:origin_airport]} to #{details[:destination_airport]}."
 	when 'hotel'
 		details = modify_hotel_details(details)
 		modify_reservation_to_db(db, details)
-		puts "Your hotel has been modified."
 	end
 	print_updated_reservation(db, details)
 end
@@ -218,10 +221,10 @@ def delete_reservation_from_db(db, details)
 end
 
 def delete_details(details)
-
 	puts "Please type the id number of the reservation that you would like to delete: "
 	id = gets.chomp
 	details[:id] = id
+	check_id(db, details)
 	return details
 end
 
@@ -229,9 +232,13 @@ def delete_reservation(db, details)
  	details = delete_details(details)
 	delete_reservation_from_db(db, details)
 	print_updated_reservation(db, details)
-	# puts "Your #{details[:reservation_type]} reservation information has been deleted."
 end
 # _____________________________________________________________________
+
+# find length of hash and use that number
+def print_number_reservations(db, details, selected_reservation)
+	puts "You have #{selected_reservation.length} #{details[:reservation_type]} reservation(s) to #{details[:modification_type]}."
+end
 
 def print_flight_reservations(db, details, selected_reservation)
 	i = 0
@@ -264,21 +271,34 @@ end
 
 def view_reservation(db, details)
 	selected_reservation = view_reservations(db, details)
+	details[:selected_reservation] = selected_reservation
 	case details[:reservation_type]
 	when 'flight'
 		print_flight_reservations(db, details, selected_reservation)
 	when 'hotel'
 		print_hotel_reservations(db, details, selected_reservation)
 	end
+	print_number_reservations(db, details, selected_reservation)
 end
 
+def redirect_path(db, details)
+	if details[:selected_reservation].length == 0
+		reservation_menu(db, details)
+	elsif details[:modification_type] == "modify"
+		modify_reservation(db, details)
+	elsif details[:modification_type] == "delete"
+		delete_reservation(db, details)
+	else details[:modification_type] == "view"
+		reservation_menu(db, details)
+	end
+end
 
 # _____________________________________________________________________
 
 def reservation_menu(db, details)
 
-puts "What type of reservation do you want to access? (hotel, flight, or done)"
-reservation_type = gets.chomp
+	puts "What type of reservation do you want to access? (hotel, flight, or done)"
+	reservation_type = gets.chomp
 
 	if reservation_type == "done"
 	else
@@ -296,14 +316,11 @@ reservation_type = gets.chomp
 			case modification_type
 			when 'add'
 				add_reservation(db, details)
-			when 'modify'
+			when 'modify', 'delete', 'view'
 				view_reservation(db, details)
-				modify_reservation(db, details)
-			when 'delete'
-				view_reservation(db, details)
-				delete_reservation(db, details)
-			when 'view'
-				view_reservation(db, details)
+				redirect_path(db, details)
+			else
+				"Sorry, your input is incomprehensible."
 			end
 			reservation_menu(db, details)
 		end
